@@ -8,6 +8,7 @@
 from trytond.model import ModelSQL, fields
 from trytond.pool import PoolMeta
 from nereid import login_required, request, flash, redirect, url_for
+from itertools import izip
 
 __all__ = ['NereidUser', 'NereidUserParty', 'Party']
 __metaclass__ = PoolMeta
@@ -28,15 +29,16 @@ class NereidUser:
     )
 
     @classmethod
-    def create(cls, values):
+    def create(cls, vlist):
         """
         Add the current party of the user to the list of parties allowed for
         the user automatically
         """
-        user = super(NereidUser, cls).create(values)
-        if 'parties' not in values:
-            cls.write([user], {'parties': [('add', [user.party.id])]})
-        return user
+        users = super(NereidUser, cls).create(vlist)
+        for values, user in izip(vlist, users):
+            if 'parties' not in values:
+                cls.write([user], {'parties': [('add', [user.party.id])]})
+        return users
 
     @classmethod
     @login_required
@@ -70,7 +72,6 @@ class NereidUserParty(ModelSQL):
         'party.party', 'Party', ondelete='CASCADE',
         select=True, required=True
     )
-
 
 
 class Party:
